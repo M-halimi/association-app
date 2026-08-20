@@ -1,0 +1,3 @@
+[build]
+  command = "prisma migrate deploy && next build"
+  publish = ".next"

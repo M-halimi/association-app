@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
 import { DEFAULT_LOCALE, isLocale, LOCALES } from "@/lib/i18n/locale";
+
+const { auth } = NextAuth(authConfig);
 
 function detectLocale(req: NextRequest): string {
   const cookie = req.cookies.get("NEXT_LOCALE")?.value;
