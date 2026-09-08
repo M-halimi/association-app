@@ -41,9 +41,16 @@ function validateDatabaseUrl(name) {
     throw new Error(`${name} must use the postgresql:// or postgres:// scheme.`);
   }
 
-  if (value.includes("AUTH_SECRET") || value.includes("%22")) {
+  if (
+    value.includes("AUTH_SECRET") ||
+    value.includes("%22") ||
+    /\[(?:YOUR[-_ ]?PASSWORD|PASSWORD)\]/i.test(value) ||
+    /(?:DATABASE_URL|DIRECT_URL|AUTH_SECRET|NEXT_PUBLIC_APP_URL)\s*=/i.test(
+      value
+    )
+  ) {
     throw new Error(
-      `${name} contains another environment assignment or encoded quotes. Set it to only one PostgreSQL URL.`
+      `${name} contains a placeholder, another environment assignment, or encoded quotes. Set it to only one PostgreSQL URL.`
     );
   }
 }
