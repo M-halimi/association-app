@@ -8,6 +8,7 @@ import {
   BarChart3,
   ChevronRight,
   CircleUserRound,
+  Contact,
   FilePlus2,
   Languages,
   LayoutDashboard,
@@ -64,6 +65,7 @@ function navItems(role: string): (NavItem | "divider")[] {
     items.push(
       "divider",
       { labelKey: "members", href: "/admin/members", icon: Users },
+      { labelKey: "people", href: "/admin/association-members", icon: Contact },
       { labelKey: "reports", href: "/admin/reports", icon: BarChart3 },
       { labelKey: "settings", href: "/admin/settings", icon: Settings },
     );
@@ -86,6 +88,8 @@ function pageTitleKey(pathname: string): keyof Dict["nav"] {
   if (pathname.startsWith("/transactions/")) return "transaction";
   if (pathname === "/admin/members") return "members";
   if (pathname.startsWith("/admin/members/")) return "memberProfile";
+  if (pathname === "/admin/association-members") return "people";
+  if (pathname.startsWith("/admin/association-members/")) return "personProfile";
   if (pathname === "/admin/reports") return "reports";
   if (pathname === "/admin/settings") return "settings";
   if (pathname === "/profile") return "profile";

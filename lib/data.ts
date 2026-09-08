@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { locale } from "next/root-params";
 import { Decimal } from "@prisma/client/runtime/library";
 import {
+  PersonGender,
+  PersonStatus,
   Role,
   TransactionStatus,
   TransactionType,
@@ -463,4 +465,118 @@ export async function getUserProfile(userId: string) {
       _count: { select: { transactions: true } },
     },
   });
+}
+
+export type PersonListItem = {
+  id: string;
+  fullName: string;
+  dateOfBirth: Date;
+  age: number;
+  gender: PersonGender;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  membershipDate: Date;
+  status: PersonStatus;
+};
+
+export type PeopleFilters = {
+  search?: string;
+  gender?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+function computeAge(dateOfBirth: Date): number {
+  const today = new Date();
+  const birth = new Date(dateOfBirth);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+export async function getPeopleList(filters: PeopleFilters) {
+  await requireAdmin();
+
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 10;
+  const skip = (page - 1) * pageSize;
+
+  const where: Record<string, unknown> = {};
+
+  if (filters.search) {
+    const term = filters.search.trim();
+    where.OR = [
+      { fullName: { contains: term, mode: "insensitive" } },
+      { phone: { contains: term, mode: "insensitive" } },
+      { email: { contains: term, mode: "insensitive" } },
+    ];
+  }
+
+  if (filters.gender && filters.gender !== "all") {
+    where.gender = filters.gender;
+  }
+
+  if (filters.status && filters.status !== "all") {
+    where.status = filters.status;
+  }
+
+  if (filters.from) {
+    where.membershipDate = {
+      ...(where.membershipDate as object),
+      gte: new Date(`${filters.from}T00:00:00`),
+    };
+  }
+  if (filters.to) {
+    where.membershipDate = {
+      ...(where.membershipDate as object),
+      lte: new Date(`${filters.to}T23:59:59`),
+    };
+  }
+
+  const [people, total] = await Promise.all([
+    prisma.person.findMany({
+      where,
+      orderBy: { fullName: "asc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.person.count({ where }),
+  ]);
+
+  const items: PersonListItem[] = people.map((p) => ({
+    id: p.id,
+    fullName: p.fullName,
+    dateOfBirth: p.dateOfBirth,
+    age: computeAge(p.dateOfBirth),
+    gender: p.gender,
+    phone: p.phone,
+    email: p.email,
+    address: p.address,
+    membershipDate: p.membershipDate,
+    status: p.status,
+  }));
+
+  return { people: items, total, page, pageSize };
+}
+
+export async function getPersonById(personId: string) {
+  await requireAdmin();
+
+  const person = await prisma.person.findUnique({
+    where: { id: personId },
+  });
+
+  if (!person) return null;
+
+  return {
+    ...person,
+    age: computeAge(person.dateOfBirth),
+  };
 }

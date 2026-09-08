@@ -9,6 +9,7 @@ import { requireAdmin, requireAuth } from "@/lib/data";
 import {
   getLoginSchema,
   getMemberFormSchema,
+  getPersonFormSchema,
   getSettingsFormSchema,
   getTransactionFormSchema,
 } from "@/lib/validations";
@@ -322,6 +323,90 @@ export async function updateSettings(input: unknown): Promise<ActionResult> {
   } catch (error) {
     return { success: false, error: zodError(error, t) };
   }
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function createPerson(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const t = await getDict();
+
+  const parsed = getPersonFormSchema(t).safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message };
+  }
+
+  const data = parsed.data;
+  try {
+    await prisma.person.create({
+      data: {
+        fullName: data.fullName.trim(),
+        dateOfBirth: new Date(`${data.dateOfBirth}T00:00:00`),
+        gender: data.gender,
+        phone: data.phone || null,
+        email: data.email || null,
+        address: data.address || null,
+        membershipDate: new Date(`${data.membershipDate}T00:00:00`),
+        status: data.status,
+      },
+    });
+  } catch (error) {
+    return { success: false, error: zodError(error, t) };
+  }
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function updatePerson(
+  personId: string,
+  input: unknown,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const t = await getDict();
+
+  const parsed = getPersonFormSchema(t).safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message };
+  }
+
+  const existing = await prisma.person.findUnique({ where: { id: personId } });
+  if (!existing) return { success: false, error: t.errors.personNotFound };
+
+  const data = parsed.data;
+  try {
+    await prisma.person.update({
+      where: { id: personId },
+      data: {
+        fullName: data.fullName.trim(),
+        dateOfBirth: new Date(`${data.dateOfBirth}T00:00:00`),
+        gender: data.gender,
+        phone: data.phone || null,
+        email: data.email || null,
+        address: data.address || null,
+        membershipDate: new Date(`${data.membershipDate}T00:00:00`),
+        status: data.status,
+      },
+    });
+  } catch (error) {
+    return { success: false, error: zodError(error, t) };
+  }
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function deletePerson(
+  personId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const t = await getDict();
+
+  const existing = await prisma.person.findUnique({ where: { id: personId } });
+  if (!existing) return { success: false, error: t.errors.personNotFound };
+
+  await prisma.person.delete({ where: { id: personId } });
 
   revalidatePath("/", "layout");
   return { success: true };

@@ -170,3 +170,52 @@ export function getSettingsFormSchema(t: Dict) {
 export const settingsFormSchema = getSettingsFormSchema(en);
 
 export type SettingsFormValues = z.infer<typeof settingsFormSchema>;
+
+export function getPersonFormSchema(t: Dict) {
+  return z.object({
+    fullName: z
+      .string()
+      .trim()
+      .min(2, t.validation.nameMin)
+      .max(100, t.validation.nameMax),
+    dateOfBirth: z
+      .string()
+      .min(1, t.validation.dobRequired)
+      .refine(
+        (value) => !Number.isNaN(Date.parse(value)),
+        t.validation.dateInvalid,
+      ),
+    gender: z.enum(["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"], {
+      error: t.validation.genderRequired,
+    }),
+    phone: z
+      .string()
+      .trim()
+      .max(30, t.validation.phoneMax)
+      .optional()
+      .or(z.literal("")),
+    email: z
+      .union([z.email(t.validation.invalidEmail), z.literal("")])
+      .optional(),
+    address: z
+      .string()
+      .trim()
+      .max(200, t.validation.addressMax)
+      .optional()
+      .or(z.literal("")),
+    membershipDate: z
+      .string()
+      .min(1, t.validation.membershipDateRequired)
+      .refine(
+        (value) => !Number.isNaN(Date.parse(value)),
+        t.validation.dateInvalid,
+      ),
+    status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"], {
+      error: t.validation.statusRequired,
+    }),
+  });
+}
+
+export const personFormSchema = getPersonFormSchema(en);
+
+export type PersonFormValues = z.infer<typeof personFormSchema>;
